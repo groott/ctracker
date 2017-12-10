@@ -1,0 +1,107 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% load mathfilters %}
+{% load humanize %}
+
+{% block content %}
+<h1 class="display-4">Campaign Tracker</h1>
+<div class="table-responsive">
+  <table class="table table-hover table-sm table-light">
+    <thead class="thead-dark">
+      <tr>
+        <th></th>
+        <th>Placement</th>
+        <th>Time</th>
+        <th>% time</th>
+        <th>Units</th>
+        <th>Unit cost</th>
+        <th>Budget</th>
+        <th>Actual</th>
+        <th>Spent</th>
+        <th>Unit cost</th>
+        <th>Daily budget</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for campaign in campaigns %}
+        <tr class="bg-warning">
+          <td><img src="{% get_media_prefix %}{{ campaign.client_name.logo }}" height="16px"></td>
+          <td>{{ campaign.campaign_name }}</td>
+          <td>{{ campaign.start_date|date:"d/m/Y" }} - {{ campaign.end_date|date:"d/m/Y" }}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        {% for placement in campaign.placement_set.all %}
+            <tr>
+              <td><img src="{% get_media_prefix %}{{ placement.publisher_name.logo }}" height="16px"></td>
+              <td>{{ placement.publisher_name }}</td>
+              <td>{{ placement.start_date|date:"d/m/Y" }} - {{ placement.end_date|date:"d/m/Y" }}</td>
+              <td>{{ placement.time_perecent|mul:100|floatformat:"0" }}%</td>
+              <td>{{ placement.units|intcomma }}</td>
+              <td>{{ placement.unit_type|upper }}
+                  {{ placement.unit_cost|floatformat:"2" }}
+                <small class="text-muted">zł</small>
+                  </td>
+              <td>{{ placement.budget|intcomma }} <small class="text-muted">zł</small></td>
+              <td><a href="#" id="units" data-pk="{{ placement.pk }}" data-type="text" data-url="/post" data-title="Enter actual units">{{ placement.units_delivered|intcomma }}</a>
+                  {% with placement.units_delivered|div:placement.units|mul:100|floatformat:"0" as unitstatus %}
+                  {% if placement.time_perecent|mul:100|sub:2|floatformat:"0" <= unitstatus and unitstatus <= placement.time_perecent|mul:100|add:2|floatformat:"0" %}
+                    <small class="text-success">{{ unitstatus }}%</small>
+                  {% else  %}
+                    <small class="text-danger">{{ unitstatus }}%</small>
+                  {% endif %}
+                  {% endwith %}
+              </td>
+              <td>{{ placement.budget_spent|intcomma }}<small class="text-muted"> zł</small>
+                  {% with placement.budget_spent|div:placement.budget|mul:100|floatformat:"0" as budgetstatus %}
+                  {% if placement.time_perecent|mul:100|sub:2|floatformat:"0" <= budgetstatus and budgetstatus <= placement.time_perecent|mul:100|add:2|floatformat:"0" %}
+                    <small class="text-success">{{ budgetstatus }}%</small>
+                  {% else  %}
+                    {% if placement.diff %}
+                        <small class="text-info">{{ budgetstatus }}%</small>
+                    {% else %}
+                        <small class="text-danger">{{ budgetstatus }}%</small>
+                    {% endif %}
+                  {% endif %}
+                  {% endwith %}
+              </td>
+              <td>
+                  {% if placement.unit_actual_cost > placement.unit_cost %}
+                    <div class="text-danger">
+                  {% else %}
+                    <div>
+                  {% endif %}
+                  {{ placement.unit_actual_cost|floatformat:"2" }}<small class="text-muted"> zł</small></div></td>
+              <td>
+                {% if placement.unit_type == "cpm" %}
+                    {% with placement.units_delivered|div:1000 as impressions %}
+                    {% with placement.budget_spent|div:impressions|floatformat:"2" as unit_cost %}
+                    {% if placement.diff %}
+                        {{ placement.units|sub:placement.units_delivered|div:1000|mul:unit_cost|sub:placement.days_left|floatformat:"2" }}<small class="text-muted"> zł</small>
+                    {% else %}
+                        {{ placement.budget|sub:placement.budget_spent|div:placement.days_left|floatformat:"2" }}<small class="text-muted"> zł</small>
+                    {% endif %}
+                    {% endwith %}{% endwith %}
+                {% else %}
+                    {% if placement.diff %}
+                        {% with placement.budget_spent|div:placement.units_delivered as unit_cost %}
+                        {{ placement.units|sub:placement.units_delivered|mul:unit_cost|div:placement.days_left|floatformat:"2" }}<small class="text-muted"> zł</small>
+                        {% endwith %}
+                    {% else %}
+                        {{ placement.budget|sub:placement.budget_spent|div:placement.days_left|floatformat:"2" }}<small class="text-muted"> zł</small>
+                    {% endif %}
+                {% endif %}
+              </td>
+            </tr>
+        {% endfor %}
+    {% endfor %}
+    </tbody>
+    </table>
+    </div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% load static %}
+<ul>
+{% for client in clients %}
+<li><img src="{% get_media_prefix %}{{ client.logo }}" height="20px">
+{{ client.client_name }}
+{% endfor %}
+</ul>
